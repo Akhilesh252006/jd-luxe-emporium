@@ -41,14 +41,13 @@ const ProductCard = ({ id, name, price, image_url, category, description }: Prod
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-[0_20px_60px_-15px_hsl(30_20%_15%_/_0.3)] transition-all duration-500 animate-fade-in">
+    <Card className="group overflow-hidden hover:shadow-[0_12px_40px_-10px_hsl(30_20%_15%_/_0.2)] transition-all duration-400">
       <Link to={`/product/${id}`}>
         <div className="relative overflow-hidden bg-secondary/30 aspect-square">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
           <img
             src={image_url}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
           <Button
             variant="ghost"

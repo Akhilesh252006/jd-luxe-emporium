@@ -54,32 +54,32 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 border-b shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={logo} alt="JD Jewellers" className="h-12 md:h-14 w-auto" />
+    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
+      <div className="container mx-auto px-4 py-3 md:py-4">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="Logo" className="h-14 w-auto md:h-16 object-contain" />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8 text-base font-medium">
+          <div className="hidden md:flex items-center space-x-6">
             <NavLinks />
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             {isAdmin && (
               <Link to="/admin">
-                <Button variant="outline" size="sm" className="hover:scale-105 transition-transform">
+                <Button variant="outline" size="sm">
                   <User className="h-4 w-4 mr-2" />
                   Admin
                 </Button>
               </Link>
             )}
             <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon" className="hover:scale-110 transition-transform">
+              <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-scale-in">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
                     {cartCount}
                   </Badge>
                 )}
@@ -93,14 +93,9 @@ const Navbar = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-[280px]">
-                <div className="flex flex-col space-y-6 mt-8">
-                  <div className="flex justify-center mb-4">
-                    <img src={logo} alt="JD Jewellers" className="h-16 w-auto" />
-                  </div>
-                  <div className="flex flex-col space-y-4 text-lg font-medium">
-                    <NavLinks />
-                  </div>
+              <SheetContent>
+                <div className="flex flex-col space-y-4 mt-8">
+                  <NavLinks />
                 </div>
               </SheetContent>
             </Sheet>

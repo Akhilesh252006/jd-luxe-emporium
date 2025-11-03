@@ -55,23 +55,18 @@ const Index = () => {
         </div>
         
         <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-          <div className="mb-8 flex justify-center animate-fade-in">
-            <img src={logo} alt="JD Jewellers" className="h-20 md:h-24 w-auto drop-shadow-2xl" />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in [animation-delay:200ms]">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
             Premium Artificial Jewellery
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-white/90 animate-fade-in [animation-delay:400ms]">
+          <p className="text-xl md:text-2xl mb-8 text-white/90">
             High-quality artificial jewellery at the cheapest prices - Not gold or silver
           </p>
-          <div className="animate-fade-in [animation-delay:600ms]">
-            <Link to="/products">
-              <Button size="lg" className="btn-gold text-lg px-8 py-6 hover:scale-105 transition-transform">
-                Explore Collection
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
+          <Link to="/products">
+            <Button size="lg" className="btn-gold text-lg px-8 py-6">
+              Explore Collection
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -95,13 +90,9 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <div 
-                key={index} 
-                className="text-center group animate-fade-in hover:scale-105 transition-transform duration-300"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors shadow-lg group-hover:shadow-xl">
-                  <feature.icon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+              <div key={index} className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                  <feature.icon className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
@@ -112,9 +103,9 @@ const Index = () => {
       </section>
 
       {/* Categories Section */}
-      <section className="py-20 bg-gradient-to-b from-background to-muted/30">
+      <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12 animate-fade-in">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Shop by Category</h2>
             <p className="text-xl text-muted-foreground">Explore our stunning collections</p>
           </div>
@@ -124,16 +115,15 @@ const Index = () => {
               <Link 
                 key={index}
                 to={category.link}
-                className="group relative overflow-hidden rounded-xl aspect-square shadow-lg hover:shadow-2xl transition-all duration-500 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group relative overflow-hidden rounded-lg aspect-square"
               >
                 <img
                   src={category.image}
                   alt={category.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end justify-center p-6">
-                  <h3 className="text-white text-2xl font-bold transform group-hover:scale-110 transition-transform duration-300">{category.name}</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-center p-6">
+                  <h3 className="text-white text-2xl font-bold">{category.name}</h3>
                 </div>
               </Link>
             ))}

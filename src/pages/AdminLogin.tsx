@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Lock, Sparkles } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { Lock } from "lucide-react";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -72,24 +71,15 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl animate-fade-in">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center mb-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
-              <div className="relative p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full">
-                <Lock className="h-10 w-10 text-primary" />
-              </div>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-primary/10 rounded-full">
+              <Lock className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <div className="flex justify-center mb-2">
-            <img src={logo} alt="JD Jewellers" className="h-16 w-auto" />
-          </div>
-          <CardTitle className="text-3xl font-bold">Admin Panel</CardTitle>
-          <p className="text-muted-foreground flex items-center justify-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            JD Jewellers Management
-          </p>
+          <CardTitle className="text-3xl">Admin Login</CardTitle>
+          <p className="text-muted-foreground">JD Jewellers</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
