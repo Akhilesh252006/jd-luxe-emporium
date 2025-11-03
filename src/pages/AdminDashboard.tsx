@@ -578,4 +578,110 @@ const AdminDashboard = () => {
 
                     <Button
                       type="submit"
-                      className="w-full h-12 text-base bg-gradient-to-r from-amber-600 to-amber
+                      className="w-full h-12 text-base bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-600/30 font-medium"
+                      disabled={loading}
+                    >
+                      {loading ? 'Saving...' : editingBanner ? 'Update Banner' : 'Add Banner'}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-4">
+              {banners.map((banner) => (
+                <Card key={banner.id} className="hover:shadow-lg transition-all border border-amber-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-serif font-bold text-slate-800">{banner.title}</h3>
+                        {banner.subtitle && <p className="text-slate-600 mt-1">{banner.subtitle}</p>}
+                        <p className="text-xs text-slate-500 mt-2">Order: {banner.display_order}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="min-h-[44px] border-amber-300 hover:bg-amber-50 hover:border-amber-400 text-amber-700"
+                          onClick={() => handleEditBanner(banner)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="min-h-[44px] border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600"
+                          onClick={() => handleDeleteBanner(banner.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {banners.length === 0 && (
+              <div className="text-center py-20 px-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-200/50">
+                <Megaphone className="h-20 w-20 mx-auto text-amber-400 mb-4" />
+                <p className="text-2xl font-serif text-slate-700 mb-2">No banners yet</p>
+                <p className="text-sm text-slate-500 font-light">Create your first promotional banner</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Suggestions Tab */}
+          <TabsContent value="suggestions" className="space-y-8">
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-amber-200/50">
+              <h2 className="text-3xl font-serif font-bold text-slate-800 mb-1">Customer Messages</h2>
+              <p className="text-sm text-slate-600 font-light tracking-wide">Feedback from your valued customers</p>
+            </div>
+
+            <div className="grid gap-4">
+              {suggestions.map((suggestion) => (
+                <Card key={suggestion.id} className="hover:shadow-lg transition-all border border-amber-200/50 bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold">
+                            {suggestion.name[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-slate-800">{suggestion.name}</h3>
+                            <p className="text-xs text-slate-500">{suggestion.email}</p>
+                          </div>
+                        </div>
+                        <p className="text-slate-700 mb-2">{suggestion.message}</p>
+                        <p className="text-xs text-slate-500">{new Date(suggestion.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="min-h-[44px] min-w-[44px] border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600"
+                        onClick={() => handleDeleteSuggestion(suggestion.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {suggestions.length === 0 && (
+              <div className="text-center py-20 px-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-amber-200/50">
+                <MessageSquare className="h-20 w-20 mx-auto text-amber-400 mb-4" />
+                <p className="text-2xl font-serif text-slate-700 mb-2">No messages yet</p>
+                <p className="text-sm text-slate-500 font-light">Customer suggestions will appear here</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
+export default AdminDashboard;
