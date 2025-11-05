@@ -642,4 +642,19 @@ const AdminDashboard = () => {
 
                     <Button
                       type="submit"
-                      className="w-full h-12 text-base bg-gradient-to-r from-amber-600 to-amber
+                      className="w-full h-12 text-base bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {editingBanner ? 'Update Banner' : 'Add Banner'}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
+export default AdminDashboard;
