@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit, Trash2, LogOut, MessageSquare, Megaphone, Upload, X, ImageIcon, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -18,41 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 // Demo component - Replace with your actual Supabase integration
 const AdminDashboard = () => {
-  const [products, setProducts] = useState<any[]>([
-    {
-      id: '1',
-      name: 'Golden Necklace',
-      description: 'Elegant 22K gold necklace',
-      price: 45000,
-      category: 'necklace',
-      stock: 5,
-      size: 'Adjustable',
-      image_url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500'
-    },
-    {
-      id: '2',
-      name: 'Diamond Earrings',
-      description: 'Sparkling diamond studs',
-      price: 85000,
-      category: 'earrings',
-      stock: 8,
-      size: 'Free Size',
-      image_url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500'
-    }
-  ]);
-  const [banners, setBanners] = useState<any[]>([
-    { id: '1', title: 'Diwali Sale', subtitle: 'Up to 50% Off', display_order: 0 },
-    { id: '2', title: 'New Arrivals', subtitle: 'Latest Collection', display_order: 1 }
-  ]);
-  const [suggestions, setSuggestions] = useState<any[]>([
-    {
-      id: '1',
-      name: 'Priya Sharma',
-      email: 'priya@example.com',
-      message: 'Love your collection! Please add more bangles.',
-      created_at: new Date().toISOString()
-    }
-  ]);
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,24 +46,82 @@ const AdminDashboard = () => {
     display_order: '0',
   });
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    alert(message);
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      
+      toast.success('Order status updated successfully');
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast.error('Failed to update order status');
+    }
   };
 
-  const handleLogout = () => {
-    showToast('Logged out successfully');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('Logged out successfully');
+    navigate('/');
   };
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) setOrders(data as any[]);
-    };
-    fetchOrders();
+    checkAdminAuth();
+    fetchData();
   }, []);
+
+  const checkAdminAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/admin');
+      return;
+    }
+    
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    if (!roles) {
+      navigate('/admin');
+    }
+  };
+
+  const fetchData = async () => {
+    // Fetch Products
+    const { data: productsData } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (productsData) setProducts(productsData);
+
+    // Fetch Banners
+    const { data: bannersData } = await supabase
+      .from('banners')
+      .select('*')
+      .order('display_order', { ascending: true });
+    if (bannersData) setBanners(bannersData);
+
+    // Fetch Suggestions
+    const { data: suggestionsData } = await supabase
+      .from('suggestions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (suggestionsData) setSuggestions(suggestionsData);
+
+    // Fetch Orders
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false});
+    if (ordersData) setOrders(ordersData);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,12 +129,12 @@ const AdminDashboard = () => {
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!validTypes.includes(file.type)) {
-      showToast('Please upload a valid image file', 'error');
+      toast.error('Please upload a valid image file');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast('Image size must be less than 5MB', 'error');
+      toast.error('Image size must be less than 5MB');
       return;
     }
 
@@ -115,7 +144,7 @@ const AdminDashboard = () => {
       const mockUrl = URL.createObjectURL(file);
       setFormData({ ...formData, image_url: mockUrl });
       setUploadingImage(false);
-      showToast('Image uploaded successfully!');
+      toast.success('Image uploaded successfully!');
     }, 1000);
   };
 
@@ -137,10 +166,10 @@ const AdminDashboard = () => {
 
       if (editingProduct) {
         setProducts(products.map(p => p.id === editingProduct.id ? productData : p));
-        showToast('Product updated successfully!');
+        toast.success('Product updated successfully!');
       } else {
         setProducts([productData, ...products]);
-        showToast('Product added successfully!');
+        toast.success('Product added successfully!');
       }
 
       setDialogOpen(false);
@@ -163,10 +192,10 @@ const AdminDashboard = () => {
 
       if (editingBanner) {
         setBanners(banners.map(b => b.id === editingBanner.id ? bannerData : b));
-        showToast('Banner updated successfully!');
+        toast.success('Banner updated successfully!');
       } else {
         setBanners([...banners, bannerData].sort((a, b) => a.display_order - b.display_order));
-        showToast('Banner added successfully!');
+        toast.success('Banner added successfully!');
       }
 
       setBannerDialogOpen(false);
@@ -202,19 +231,19 @@ const AdminDashboard = () => {
   const handleDelete = (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     setProducts(products.filter(p => p.id !== id));
-    showToast('Product deleted successfully!');
+    toast.success('Product deleted successfully!');
   };
 
   const handleDeleteBanner = (id: string) => {
     if (!confirm('Are you sure you want to delete this banner?')) return;
     setBanners(banners.filter(b => b.id !== id));
-    showToast('Banner deleted successfully!');
+    toast.success('Banner deleted successfully!');
   };
 
   const handleDeleteSuggestion = (id: string) => {
     if (!confirm('Are you sure you want to delete this suggestion?')) return;
     setSuggestions(suggestions.filter(s => s.id !== id));
-    showToast('Suggestion deleted successfully!');
+    toast.success('Suggestion deleted successfully!');
   };
 
   const resetForm = () => {
@@ -552,7 +581,8 @@ const AdminDashboard = () => {
                         <th className="py-3 pr-4">Phone</th>
                         <th className="py-3 pr-4">Total (₹)</th>
                         <th className="py-3 pr-4">Items</th>
-                        <th className="py-3">Address</th>
+                        <th className="py-3 pr-4">Address</th>
+                        <th className="py-3">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -569,7 +599,24 @@ const AdminDashboard = () => {
                               ))}
                             </ul>
                           </td>
-                          <td className="py-3 max-w-[360px] break-words">{o.customer_address}</td>
+                          <td className="py-3 pr-4 max-w-[300px] break-words">{o.customer_address}</td>
+                          <td className="py-3">
+                            <Select
+                              value={o.status || 'pending'}
+                              onValueChange={(value) => updateOrderStatus(o.id, value)}
+                            >
+                              <SelectTrigger className="w-[140px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="packed">Packed</SelectItem>
+                                <SelectItem value="shipped">Shipped</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

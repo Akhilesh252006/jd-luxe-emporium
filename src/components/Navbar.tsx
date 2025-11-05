@@ -1,35 +1,73 @@
-import { Link } from "react-router-dom";
-import { ShoppingCart, Menu, User, LogIn } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, Menu, User, LogIn, LogOut, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    checkAdminStatus();
+    checkAuthStatus();
     loadCartCount();
     const handleUpdate = () => loadCartCount();
     window.addEventListener('cartUpdated', handleUpdate);
-    return () => window.removeEventListener('cartUpdated', handleUpdate);
+    
+    // Listen to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('cartUpdated', handleUpdate);
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const checkAdminStatus = async () => {
+  const checkAuthStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
     if (user) {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-      setIsAdmin(!!roles);
+      checkAdminStatus(user.id);
     }
+  };
+
+  const checkAdminStatus = async (userId: string) => {
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    setIsAdmin(!!roles);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    toast.success('Logged out successfully');
+    navigate('/');
   };
 
   const loadCartCount = () => {
@@ -83,12 +121,42 @@ const Navbar = () => {
                 </Button>
               </Link>
             )}
-            <Link to="/login" className="hidden md:block">
-              <Button variant="outline" size="sm">
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
-              </Button>
-            </Link>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="hidden md:flex">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/track-order')}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Track Order
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/login" className="hidden md:block">
+                <Button variant="outline" size="sm">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Login
+                </Button>
+              </Link>
+            )}
+            
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
@@ -110,12 +178,23 @@ const Navbar = () => {
               <SheetContent>
                 <div className="flex flex-col space-y-4 mt-8">
                   <NavLinks />
-                  <Link to="/login" className="mt-2">
-                    <Button variant="outline" className="w-full">
-                      <LogIn className="h-4 w-4 mr-2" />
-                      Login
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <>
+                      <Link to="/profile" className="hover:text-primary transition-colors">Profile</Link>
+                      <Link to="/track-order" className="hover:text-primary transition-colors">Track Order</Link>
+                      <Button variant="outline" className="w-full mt-2" onClick={handleLogout}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    <Link to="/login" className="mt-2">
+                      <Button variant="outline" className="w-full">
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Login
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>

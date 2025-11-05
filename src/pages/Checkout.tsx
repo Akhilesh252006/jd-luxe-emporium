@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CheckCircle } from "lucide-react";
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
@@ -39,6 +47,7 @@ const Checkout = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -48,33 +57,28 @@ const Checkout = () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      const currentPath = `/checkout${singleProductId ? `?product=${singleProductId}` : ''}`;
-      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      toast.error('Please login to continue');
+      navigate('/login?redirect=/checkout' + (singleProductId ? `?product=${singleProductId}` : ''));
       return;
     }
-    
+
     setUser(user);
-    
-    // Load user profile data
+
+    // Pre-fill user data
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .maybeSingle();
-    
+      .single();
+
     if (profile) {
       setFormData(prev => ({
         ...prev,
         name: profile.full_name || '',
         email: profile.email || user.email || '',
       }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        email: user.email || '',
-      }));
     }
-    
+
     loadCheckoutData();
   };
 
@@ -92,11 +96,22 @@ const Checkout = () => {
     } else {
       const sessionId = getOrCreateSessionId();
       const cartItems = JSON.parse(localStorage.getItem(`cart_${sessionId}`) || '[]');
-      if (cartItems.length === 0) {
-        navigate('/cart');
-        return;
+      
+      if (cartItems.length > 0) {
+        const productIds = cartItems.map((item: any) => item.id);
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+        
+        if (productsData) {
+          const productsWithQuantity = productsData.map(product => ({
+            ...product,
+            quantity: cartItems.find((item: any) => item.id === product.id)?.quantity || 1
+          }));
+          setProducts(productsWithQuantity);
+        }
       }
-      setProducts(cartItems);
     }
   };
 
@@ -118,12 +133,9 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
     if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -142,7 +154,7 @@ const Checkout = () => {
           }
         });
         setErrors(newErrors);
-        toast.error('Please fix the errors in the form');
+        toast.error('Please fix the form errors');
         return;
       }
     }
@@ -173,30 +185,22 @@ const Checkout = () => {
           customer_email: orderDetails.customerEmail,
           customer_address: orderDetails.customerAddress,
           products: orderDetails.products,
-          total_amount: orderDetails.totalAmount
+          total_amount: orderDetails.totalAmount,
+          user_id: user?.id,
+          status: 'pending'
         });
 
       if (dbError) throw dbError;
 
-      const { data, error } = await supabase.functions.invoke('send-whatsapp-order', {
-        body: { orderDetails }
-      });
-
-      if (error) throw error;
-
+      // Clear cart if it was a cart order
       if (!singleProductId) {
         const sessionId = getOrCreateSessionId();
         localStorage.removeItem(`cart_${sessionId}`);
         window.dispatchEvent(new Event('cartUpdated'));
       }
 
-      toast.success('Order placed successfully!');
-      
-      if (data?.whatsappUrl) {
-        window.open(data.whatsappUrl, '_blank');
-      }
-
-      setTimeout(() => navigate('/'), 2000);
+      // Show success dialog
+      setShowSuccessDialog(true);
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -389,13 +393,46 @@ const Checkout = () => {
                 <div className="pt-4 text-sm text-muted-foreground space-y-1">
                   <p>• Cash on Delivery available</p>
                   <p>• Delivery within 5-7 business days</p>
-                  <p>• Order details will be sent via WhatsApp</p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-2xl">Congratulations!</DialogTitle>
+            <DialogDescription className="text-center text-base">
+              Your order has been placed successfully.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              onClick={() => navigate('/')}
+              className="w-full btn-gold"
+              size="lg"
+            >
+              Back to Home
+            </Button>
+            <Button
+              onClick={() => navigate('/track-order')}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              Track Order
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
