@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Menu, User } from "lucide-react";
+import { ShoppingCart, Menu, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,9 @@ const Navbar = () => {
   useEffect(() => {
     checkAdminStatus();
     loadCartCount();
+    const handleUpdate = () => loadCartCount();
+    window.addEventListener('cartUpdated', handleUpdate);
+    return () => window.removeEventListener('cartUpdated', handleUpdate);
   }, []);
 
   const checkAdminStatus = async () => {
@@ -57,8 +60,13 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logo} alt="Logo" className="h-14 w-auto md:h-16 object-contain" />
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="Harsh Kangan Store logo" className="h-12 w-auto md:h-14 object-contain" />
+            <div className="hidden sm:block">
+              <p className="text-xl md:text-2xl font-serif font-bold tracking-wide bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent">
+                Harsh Kangan Store
+              </p>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -75,6 +83,12 @@ const Navbar = () => {
                 </Button>
               </Link>
             )}
+            <Link to="/login" className="hidden md:block">
+              <Button variant="outline" size="sm">
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            </Link>
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
@@ -96,6 +110,12 @@ const Navbar = () => {
               <SheetContent>
                 <div className="flex flex-col space-y-4 mt-8">
                   <NavLinks />
+                  <Link to="/login" className="mt-2">
+                    <Button variant="outline" className="w-full">
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Login
+                    </Button>
+                  </Link>
                 </div>
               </SheetContent>
             </Sheet>

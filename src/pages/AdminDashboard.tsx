@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ const AdminDashboard = () => {
     }
   ]);
   const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -80,6 +82,17 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     showToast('Logged out successfully');
   };
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) setOrders(data as any[]);
+    };
+    fetchOrders();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -261,7 +274,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <Tabs defaultValue="products" className="w-full space-y-8">
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 bg-white/60 backdrop-blur-sm border border-amber-200/50 shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1.5 bg-white/60 backdrop-blur-sm border border-amber-200/50 shadow-sm">
             <TabsTrigger
               value="products"
               className="text-sm sm:text-base py-3 min-h-[44px] data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-50 data-[state=active]:text-amber-900 data-[state=active]:shadow-sm font-medium"
@@ -285,6 +298,14 @@ const AdminDashboard = () => {
               <MessageSquare className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Messages</span>
               <span className="sm:hidden">Msgs</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="orders"
+              className="text-sm sm:text-base py-3 min-h-[44px] data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-50 data-[state=active]:text-amber-900 data-[state=active]:shadow-sm font-medium"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Orders</span>
+              <span className="sm:hidden">Orders</span>
             </TabsTrigger>
           </TabsList>
 
@@ -513,6 +534,49 @@ const AdminDashboard = () => {
                 <p className="text-sm text-slate-500 font-light">Add your first exquisite piece</p>
               </div>
             )}
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders" className="space-y-6">
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-amber-200/50">
+              <h2 className="text-3xl font-serif font-bold text-slate-800 mb-4">Orders</h2>
+              {orders.length === 0 ? (
+                <p className="text-slate-600">No orders yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-slate-600">
+                        <th className="py-3 pr-4">Date</th>
+                        <th className="py-3 pr-4">Customer</th>
+                        <th className="py-3 pr-4">Phone</th>
+                        <th className="py-3 pr-4">Total (₹)</th>
+                        <th className="py-3 pr-4">Items</th>
+                        <th className="py-3">Address</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((o) => (
+                        <tr key={o.id} className="border-t border-amber-200/50 align-top">
+                          <td className="py-3 pr-4 whitespace-nowrap">{new Date(o.created_at).toLocaleString()}</td>
+                          <td className="py-3 pr-4 font-medium">{o.customer_name}</td>
+                          <td className="py-3 pr-4">{o.customer_phone}</td>
+                          <td className="py-3 pr-4 font-semibold">{(o.total_amount || 0).toLocaleString('en-IN')}</td>
+                          <td className="py-3 pr-4">
+                            <ul className="list-disc pl-5 space-y-1">
+                              {(o.products || []).map((p: any, idx: number) => (
+                                <li key={idx}>{p.name} × {p.quantity} — ₹{p.price}</li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td className="py-3 max-w-[360px] break-words">{o.customer_address}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Banners Tab */}

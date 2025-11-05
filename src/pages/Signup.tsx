@@ -127,8 +127,8 @@ const Signup = () => {
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-80px)]">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-3xl text-center">Create Account</CardTitle>
-            <p className="text-center text-muted-foreground">Sign up to start shopping</p>
+            <CardTitle className="text-3xl text-center">Create your Harsh Kangan account</CardTitle>
+            <p className="text-center text-muted-foreground">Join us for exclusive offers and new arrivals</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

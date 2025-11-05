@@ -79,7 +79,7 @@ const AdminLogin = () => {
             </div>
           </div>
           <CardTitle className="text-3xl">Admin Login</CardTitle>
-          <p className="text-muted-foreground">JD Jewellers</p>
+          <p className="text-muted-foreground">Harsh Kangan Store</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -90,7 +90,7 @@ const AdminLogin = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@jdjewellers.com"
+                placeholder="admin@harshkangan.com"
                 required
               />
             </div>

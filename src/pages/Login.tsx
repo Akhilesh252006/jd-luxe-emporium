@@ -102,8 +102,8 @@ const Login = () => {
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-80px)]">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-3xl text-center">Welcome Back</CardTitle>
-            <p className="text-center text-muted-foreground">Login to continue shopping</p>
+            <CardTitle className="text-3xl text-center">Welcome back to Harsh Kangan</CardTitle>
+            <p className="text-center text-muted-foreground">Login to continue your jewellery shopping</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
