@@ -1,41 +1,31 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
-import * as OTPAuth from "otpauth"; // ✅ Browser-safe OTP library
+import * as OTPAuth from "otpauth";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { queryAdminTwoFactor } from "@/lib/supabase-helpers";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { user, userRole, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [showOtp, setShowOtp] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (roles) navigate("/admin/dashboard");
+    if (!authLoading && user && userRole === 'admin') {
+      navigate("/admin/dashboard");
     }
-  };
+  }, [user, userRole, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,23 +53,19 @@ const AdminLogin = () => {
         return;
       }
 
-      // ✅ Check if 2FA secret exists
-      const { data: twofa } = await supabase
-        .from("admin_twofactor")
+      // Check if 2FA secret exists
+      const twofaResponse = await queryAdminTwoFactor
         .select("secret")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (twofa?.secret) {
-        // ask for OTP input
-        setSecret(twofa.secret);
-        setUserId(user.id);
+      if (twofaResponse.data?.secret) {
+        setSecret(twofaResponse.data.secret);
         setShowOtp(true);
         toast.info("Enter your 2FA code from Google Authenticator");
       } else {
-        // ✅ Create new secret using otpauth (browser-safe)
         const newSecret = new OTPAuth.Secret();
-        await supabase.from("admin_twofactor").insert({
+        await queryAdminTwoFactor.insert({
           user_id: user.id,
           secret: newSecret.base32,
         });

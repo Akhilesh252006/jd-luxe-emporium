@@ -35,17 +35,16 @@ const Index = () => {
     const fetchProducts = async () => {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("products")
+      const productResponse = await queryProducts
         .select("id, name, price, image_url, category, description, like_count")
         .eq("is_active", true)
-        .order("like_count", { ascending: false }) // sort by most liked
+        .order("like_count", { ascending: false })
         .limit(15);
 
-      if (error) {
-        console.error("❌ Error fetching products:", error.message);
+      if (productResponse.error) {
+        setProducts([]);
       } else {
-        setProducts(data || []);
+        setProducts(productResponse.data || []);
       }
 
       setLoading(false);

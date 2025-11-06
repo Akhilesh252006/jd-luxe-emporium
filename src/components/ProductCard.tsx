@@ -4,7 +4,8 @@ import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { queryProductLikes, callRpc } from "@/lib/supabase-helpers";
 
 interface ProductCardProps {
   id: string;
@@ -27,78 +28,28 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const [likes, setLikes] = useState(like_count);
   const [liked, setLiked] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // 🧠 Safely get Supabase Auth user
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        // 1️⃣ Check if a session exists first
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.warn("Session check error:", sessionError.message);
-          return;
-        }
+    if (!user) return;
 
-        if (!session) {
-          // no active session = user not logged in
-          setUserId(null);
-          return;
-        }
+      const checkLike = async () => {
+        const likeResponse = await queryProductLikes
+          .select("id")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-        // 2️⃣ Fetch user safely
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error("Auth fetch error:", error.message);
-          return;
-        }
-
-        setUserId(user?.id || null);
-      } catch (err) {
-        console.error("Unexpected auth error:", err);
-      }
-    };
-
-    fetchUser();
-
-    // 3️⃣ Keep in sync with login/logout
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id || null);
-    });
-
-    return () => {
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
-
-  // ✅ Check if product already liked
-  useEffect(() => {
-    if (!userId) return;
-
-    const checkLike = async () => {
-      const { data, error } = await supabase
-        .from("product_likes")
-        .select("id")
-        .eq("product_id", id)
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Check like error:", error.message);
-        return;
-      }
-
-      if (data) setLiked(true);
-    };
+        if (!likeResponse.error && likeResponse.data) setLiked(true);
+      };
 
     checkLike();
-  }, [id, userId]);
+  }, [id, user]);
 
-  // 💖 Handle like button click
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!userId) {
+    if (!user) {
       toast.error("Please log in to like products.");
       return;
     }
@@ -112,24 +63,21 @@ const ProductCard = ({
     setLikes((prev) => prev + 1);
 
     try {
-      // 1️⃣ Insert like record
-      const { error: likeError } = await supabase.from("product_likes").insert([
+      const likeResponse = await queryProductLikes.insert([
         {
           product_id: id,
-          user_id: userId,
+          user_id: user.id,
         },
       ]);
-      if (likeError) throw likeError;
+      if (likeResponse.error) throw likeResponse.error;
 
-      // 2️⃣ Increment like count in products table
-      const { error: rpcError } = await supabase.rpc("increment_like_count", {
+      const rpcResponse = await callRpc("increment_like_count", {
         product_id_input: id,
       });
-      if (rpcError) throw rpcError;
+      if (rpcResponse.error) throw rpcResponse.error;
 
       toast.success("You liked this product!");
     } catch (err: any) {
-      console.error("Like save error:", err);
       setLiked(false);
       setLikes((prev) => prev - 1);
       toast.error("Error saving like.");

@@ -113,7 +113,6 @@ const Signup = () => {
         navigate(redirect);
       }
     } catch (error) {
-      console.error('Signup error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);

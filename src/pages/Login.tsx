@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Please enter a valid email"),
@@ -17,37 +18,22 @@ const loginSchema = z.object({
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, userRole, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // ✅ Check if already logged in
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single();
-
-          if (profile?.role === "admin") {
-            navigate("/admin");
-          } else {
-            navigate("/");
-          }
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
-      } finally {
-        setCheckingSession(false);
+    if (!authLoading && user) {
+      if (userRole === "admin") {
+        toast.error("Access denied. Please use admin login.");
+        navigate("/admin");
+      } else {
+        const redirect = searchParams.get("redirect") || "/";
+        navigate(redirect);
       }
-    };
-    checkUser();
-  }, [navigate]);
+    }
+  }, [user, userRole, authLoading, navigate, searchParams]);
 
   // 🧠 Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,39 +98,31 @@ const Login = () => {
         return;
       }
 
-      // ✅ Fetch role from profiles
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
+      const { data: roleData } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("id", data.user.id)
-        .single();
+        .eq("user_id", data.user.id)
+        .maybeSingle();
 
-      if (profileError) {
-        console.error("Profile fetch error:", profileError.message);
-        toast.error("Failed to load user profile. Please try again.");
+      if (roleData?.role === "admin") {
+        await supabase.auth.signOut();
+        toast.error("Access denied. Please use admin login page.");
+        navigate("/admin");
         setLoading(false);
         return;
       }
 
       toast.success("Login successful!");
-
-      // 🔁 Redirect based on role
-      if (profile?.role === "admin") {
-        navigate("/admin");
-      } else {
-        const redirect = searchParams.get("redirect") || "/";
-        navigate(redirect);
-      }
+      const redirect = searchParams.get("redirect") || "/";
+      navigate(redirect);
 
     } catch (err) {
-      console.error("Login error:", err);
       toast.error("An unexpected error occurred");
       setLoading(false);
     }
   };
 
-  // Show loading state while checking session
-  if (checkingSession) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />

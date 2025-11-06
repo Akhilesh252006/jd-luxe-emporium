@@ -37,7 +37,7 @@ const Products = () => {
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      // Silently fail
     } finally {
       setLoading(false);
     }

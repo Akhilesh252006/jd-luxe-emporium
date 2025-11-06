@@ -203,7 +203,6 @@ const Checkout = () => {
       setShowSuccessDialog(true);
 
     } catch (error) {
-      console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
     } finally {
       setLoading(false);

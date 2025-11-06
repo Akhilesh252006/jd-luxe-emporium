@@ -58,7 +58,6 @@ const AdminDashboard = () => {
       toast.success('Order status updated successfully');
       fetchData(); // Refresh data
     } catch (error) {
-      console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
     }
   };

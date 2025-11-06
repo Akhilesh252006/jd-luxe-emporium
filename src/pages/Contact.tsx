@@ -73,7 +73,6 @@ const Contact = () => {
       toast.success('Thank you! Your message has been sent successfully.');
       setFormData({ name: '', email: '', message: '' });
     } catch (error) {
-      console.error('Error submitting suggestion:', error);
       toast.error('Failed to send message. Please try again.');
     } finally {
       setLoading(false);

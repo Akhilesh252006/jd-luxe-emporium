@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, User, LogIn, LogOut, Package } from "lucide-react";
+import { ShoppingCart, Menu, User, LogIn, LogOut, Package, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,60 +12,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { user, userRole, signOut } = useAuth();
   const [cartCount, setCartCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    checkAuthStatus();
     loadCartCount();
     const handleUpdate = () => loadCartCount();
     window.addEventListener('cartUpdated', handleUpdate);
-    
-    // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      } else {
-        setIsAdmin(false);
-      }
-    });
 
     return () => {
       window.removeEventListener('cartUpdated', handleUpdate);
-      subscription.unsubscribe();
     };
   }, []);
 
-  const checkAuthStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (user) {
-      checkAdminStatus(user.id);
-    }
-  };
-
-  const checkAdminStatus = async (userId: string) => {
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    setIsAdmin(!!roles);
-  };
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setIsAdmin(false);
+    await signOut();
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -112,7 +79,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {isAdmin && (
+            {userRole === 'admin' && (
               <Link to="/admin">
                 <Button variant="outline" size="sm">
                   <User className="h-4 w-4 mr-2" />
@@ -135,6 +102,10 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="h-4 w-4 mr-2" />
                     Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/saved')}>
+                    <Heart className="h-4 w-4 mr-2" />
+                    Saved Products
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/track-order')}>
                     <Package className="h-4 w-4 mr-2" />
@@ -180,6 +151,7 @@ const Navbar = () => {
                   {user ? (
                     <>
                       <Link to="/profile" className="hover:text-primary transition-colors">Profile</Link>
+                      <Link to="/saved" className="hover:text-primary transition-colors">Saved Products</Link>
                       <Link to="/track-order" className="hover:text-primary transition-colors">Track Order</Link>
                       <Button variant="outline" className="w-full mt-2" onClick={handleLogout}>
                         <LogOut className="h-4 w-4 mr-2" />

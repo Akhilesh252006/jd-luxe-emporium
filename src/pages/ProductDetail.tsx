@@ -29,7 +29,6 @@ const ProductDetail = () => {
       if (error) throw error;
       setProduct(data);
     } catch (error) {
-      console.error('Error fetching product:', error);
       toast.error('Failed to load product details');
     } finally {
       setLoading(false);
