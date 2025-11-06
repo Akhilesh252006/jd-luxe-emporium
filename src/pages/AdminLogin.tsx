@@ -7,11 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
+import * as OTPAuth from "otpauth"; // ✅ Browser-safe OTP library
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [showOtp, setShowOtp] = useState(false);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,15 +27,13 @@ const AdminLogin = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
         .maybeSingle();
-      
-      if (roles) {
-        navigate('/admin/dashboard');
-      }
+
+      if (roles) navigate("/admin/dashboard");
     }
   };
 
@@ -43,27 +46,84 @@ const AdminLogin = () => {
         email,
         password,
       });
-
       if (error) throw error;
+      const user = data.user;
+      if (!user) throw new Error("No user found");
 
-      if (data.user) {
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
 
-        if (roles) {
-          toast.success('Logged in successfully!');
-          navigate('/admin/dashboard');
-        } else {
-          await supabase.auth.signOut();
-          toast.error('Access denied. Admin privileges required.');
-        }
+      if (!roles) {
+        await supabase.auth.signOut();
+        toast.error("Access denied. Admin privileges required.");
+        return;
+      }
+
+      // ✅ Check if 2FA secret exists
+      const { data: twofa } = await supabase
+        .from("admin_twofactor")
+        .select("secret")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (twofa?.secret) {
+        // ask for OTP input
+        setSecret(twofa.secret);
+        setUserId(user.id);
+        setShowOtp(true);
+        toast.info("Enter your 2FA code from Google Authenticator");
+      } else {
+        // ✅ Create new secret using otpauth (browser-safe)
+        const newSecret = new OTPAuth.Secret();
+        await supabase.from("admin_twofactor").insert({
+          user_id: user.id,
+          secret: newSecret.base32,
+        });
+
+        const totp = new OTPAuth.TOTP({
+          issuer: "HarshKanganStore",
+          label: email,
+          algorithm: "SHA1",
+          digits: 6,
+          period: 30,
+          secret: newSecret,
+        });
+
+        const otpAuthUrl = totp.toString();
+        toast.info("Scan this QR in Google Authenticator to enable 2FA");
+
+        navigate(`/admin/setup-2fa?otpauth=${encodeURIComponent(otpAuthUrl)}`);
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to login');
+      toast.error(error.message || "Failed to login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secret) return;
+    setLoading(true);
+
+    try {
+      const totp = new OTPAuth.TOTP({
+        secret: OTPAuth.Secret.fromBase32(secret),
+        digits: 6,
+        period: 30,
+      });
+
+      const delta = totp.validate({ token: otp, window: 1 });
+      if (delta === null) throw new Error("Invalid 2FA code");
+
+      toast.success("2FA verified successfully!");
+      navigate("/admin/dashboard");
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -82,40 +142,55 @@ const AdminLogin = () => {
           <p className="text-muted-foreground">Harsh Kangan Store</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@harshkangan.com"
-                required
-              />
-            </div>
+          {!showOtp ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@harshkangan.com"
+                  required
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
 
-            <Button
-              type="submit"
-              className="w-full btn-gold"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full btn-gold" size="lg" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={verifyOtp} className="space-y-4">
+              <div>
+                <Label htmlFor="otp">2FA Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full btn-gold" size="lg" disabled={loading}>
+                {loading ? "Verifying..." : "Verify Code"}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
