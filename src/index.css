@@ -7,7 +7,7 @@
   100% { transform: translateX(-50%); }
 }
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -26,7 +26,7 @@ All colors MUST be HSL.
     /* Rich gold primary color */
     --primary: 43 74% 49%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Elegant gold variant */
     --primary-glow: 45 100% 60%;
 
@@ -50,17 +50,17 @@ All colors MUST be HSL.
     --ring: 43 74% 49%;
 
     --radius: 0.75rem;
-    
+
     /* Custom luxury gradients */
     --gradient-gold: linear-gradient(135deg, hsl(43, 74%, 49%), hsl(45, 100%, 60%));
     --gradient-elegant: linear-gradient(180deg, hsl(38, 30%, 97%), hsl(35, 20%, 92%));
     --gradient-hero: linear-gradient(135deg, hsl(30, 20%, 15%) 0%, hsl(25, 35%, 30%) 100%);
-    
+
     /* Elegant shadows */
     --shadow-gold: 0 10px 40px -10px hsl(43 74% 49% / 0.3);
     --shadow-soft: 0 4px 20px -4px hsl(30 20% 15% / 0.1);
     --shadow-card: 0 8px 30px -8px hsl(30 20% 15% / 0.15);
-    
+
     /* Smooth transitions */
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.2s ease;
@@ -95,7 +95,7 @@ All colors MUST be HSL.
 
     --primary: 43 74% 49%;
     --primary-foreground: 0 0% 100%;
-    
+
     --primary-glow: 45 100% 60%;
 
     --secondary: 30 15% 20%;
@@ -133,7 +133,7 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-weight: 700;
@@ -145,20 +145,42 @@ All colors MUST be HSL.
   .btn-gold {
     @apply bg-primary text-primary-foreground hover:opacity-90 transition-all duration-300 shadow-[0_4px_20px_-4px_hsl(43_74%_49%_/_0.4)] hover:shadow-[0_8px_30px_-6px_hsl(43_74%_49%_/_0.5)] hover:scale-105;
   }
-  
+
   .card-elegant {
     @apply bg-card rounded-lg p-6 shadow-[0_8px_30px_-8px_hsl(30_20%_15%_/_0.15)] hover:shadow-[0_12px_40px_-10px_hsl(30_20%_15%_/_0.2)] transition-all duration-400;
   }
-  
+
   .text-gold {
     @apply text-primary;
   }
-  
+
   .gradient-gold {
     background: linear-gradient(135deg, hsl(43, 74%, 49%), hsl(45, 100%, 60%));
   }
-  
+
   .gradient-hero {
     background: linear-gradient(135deg, hsl(30, 20%, 15%) 0%, hsl(25, 35%, 30%) 100%);
+  }
+}
+
+@theme inline {
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
   }
 }

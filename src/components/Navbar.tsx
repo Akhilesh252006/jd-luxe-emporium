@@ -89,7 +89,6 @@ const Navbar = () => {
     <>
       <Link to="/" className="hover:text-primary transition-colors">Home</Link>
       <Link to="/products" className="hover:text-primary transition-colors">Products</Link>
-      <Link to="/about" className="hover:text-primary transition-colors">About</Link>
       <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
     </>
   );

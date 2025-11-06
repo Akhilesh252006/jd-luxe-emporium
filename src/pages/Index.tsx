@@ -10,23 +10,12 @@ import earrings1 from "@/assets/earrings-1.jpg";
 import bangles1 from "@/assets/bangles-1.jpg";
 import ring1 from "@/assets/ring-1.jpg";
 import logo from "@/assets/logo.png";
+import { BannerMarquee } from "@/components/BannerMarquee";
+import ProductCard from "@/components/ProductCard";
 
 const Index = () => {
-  const [banners, setBanners] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
-  const fetchBanners = async () => {
-    const { data } = await supabase
-      .from('banners')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
-    
-    if (data) setBanners(data);
-  };
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     { name: "Necklaces", image: necklace1, link: "/products?category=necklace" },
@@ -41,19 +30,43 @@ const Index = () => {
     { icon: Truck, title: "Free Shipping", description: "On orders above ₹2000" },
   ];
 
+  // ✅ Fetch top liked, active products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, category, description, like_count")
+        .eq("is_active", true)
+        .order("like_count", { ascending: false }) // sort by most liked
+        .limit(15);
+
+      if (error) {
+        console.error("❌ Error fetching products:", error.message);
+      } else {
+        setProducts(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40" />
         </div>
-        
+
         <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
             Premium Artificial Jewellery
@@ -70,34 +83,27 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Banners Section */}
-      {banners.length > 0 && (
-        <section className="py-8 bg-muted/30 overflow-hidden">
-          <div className="animate-[scroll_20s_linear_infinite] flex gap-8 whitespace-nowrap">
-            {[...banners, ...banners].map((banner, index) => (
-              <div key={index} className="inline-flex items-center gap-2 bg-primary/10 px-6 py-3 rounded-full">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-lg">{banner.title}</span>
-                {banner.subtitle && <span className="text-muted-foreground">• {banner.subtitle}</span>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <BannerMarquee />
 
       {/* Features Section */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <feature.icon className="h-8 w-8 text-primary" />
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={index}
+                  className="text-center transition-all hover:scale-105 duration-300"
+                >
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <Icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -109,10 +115,10 @@ const Index = () => {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Shop by Category</h2>
             <p className="text-xl text-muted-foreground">Explore our stunning collections</p>
           </div>
-          
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => (
-              <Link 
+              <Link
                 key={index}
                 to={category.link}
                 className="group relative overflow-hidden rounded-lg aspect-square"
@@ -127,6 +133,38 @@ const Index = () => {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 🛍️ Products Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Featured Products</h2>
+            <p className="text-xl text-muted-foreground">Discover our latest arrivals</p>
+          </div>
+
+          {loading ? (
+            <p className="text-center text-muted-foreground text-lg">Loading products...</p>
+          ) : products.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <ProductCard key={product.id} {...product} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground text-lg">
+              No products available right now.
+            </p>
+          )}
+
+          <div className="text-center mt-12">
+            <Link to="/products">
+              <Button size="lg" className="btn-gold text-lg px-8 py-6">
+                View All Products
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -153,16 +191,30 @@ const Index = () => {
       <footer className="bg-muted/50 py-12">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
-          <div>
-            <img src={logo} alt="Logo" className="h-16 md:h-20 w-auto mb-4" />
-            <p className="text-muted-foreground">Premium artificial jewellery at unbeatable prices</p>
-          </div>
+            <div>
+              <img src={logo} alt="Logo" className="h-16 md:h-20 w-auto mb-2" />
+              <p className="text-muted-foreground">
+                Premium artificial jewellery at unbeatable prices
+              </p>
+            </div>
             <div>
               <h4 className="font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-muted-foreground text-base">
-                <li><Link to="/products" className="hover:text-primary transition-colors">Products</Link></li>
-                <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+                <li>
+                  <Link to="/products" className="hover:text-primary transition-colors">
+                    Products
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-primary transition-colors">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-primary transition-colors">
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
@@ -183,7 +235,7 @@ const Index = () => {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-border text-center text-muted-foreground">
-            <p>&copy; 2025 Harsh Kangan. All rights reserved.</p>
+            <p>&copy; 2025 HK Store. All rights reserved.</p>
           </div>
         </div>
       </footer>
